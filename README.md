@@ -1,76 +1,59 @@
-Killer Sudoku Solver
-====================
+Resolutor de Sudoku Killer
+==============================
+El Sudoku Asesino es una variante del Sudoku donde, además de los nonetos regulares de números del 1 al 9,
+también existen jaulas adicionales que actúan como una limitación adicional sobre qué números pueden estar dónde.
+Las jaulas son básicamente la única adición al Sudoku regular, por lo que donde el Sudoku regular dicta
+que los números del 1 al 9 solo pueden existir una vez por cada fila, columna y noneto. El Sudoku Asesino
+se construye sobre eso y agrega una limitación adicional de que el mismo número no puede estar representado más
+de una vez en cada jaula, y que la suma de los números dentro de la jaula debe ser un número específico.
 
-Killer Sodoku is a variant of Sodoku where there besides the regular nonets of numbers 1 through 9,
-are also additional cages that acts as further limitation on which numbers can be where.
-The cages are basically the only addition to regular Sudoku, so where the regular Sudoku dictates
-that the numbers 1 through 9 can only exist once for each row, column and nonet. Killer Sudoku
-builds upon that, and adds an additional limitation that the same number can not be represented more
-than once in each cage, and that the sum of the numbers within the cage must be a specific
-number.
+En el Sudoku, las limitaciones adicionales suelen ser una ventaja para el jugador, ya que limitan mucho las
+combinaciones posibles que se pueden jugar. Sin embargo, en el Sudoku Asesino hay menos campos (si es que hay alguno) completados desde
+el principio.
 
-In Sudoku additional limitations are often an advantage to the player since it greatly limits the
-possible combinations that can be played. In Killer Sudoku fewer fields (if any) are filled out from
-the start though.
+============================================================
+Rendimiento
+==============================
 
-## Performance
+En mi Core i7 4770K, resolver un rompecabezas de nivel experto (sin ningún campo en el tablero) toma menos de
+un segundo utilizando este algoritmo. El tiempo que se tarda en completar varía de un rompecabezas a otro y está
+fundamentalmente basado en cuántas combinaciones se pueden eliminar del árbol de búsqueda. Para probar el
+rendimiento localmente, utiliza el parámetro --benchmark que mostrará cuánto tiempo se tarda en resolver el
+rompecabezas proporcionado(s).
 
-On my Core i7 4770K solving an expert level puzzle (without any fields on the board) takes less than
-a second using this algorithm. The time it takes to complete varies from puzzle to puzzle, and is
-fundamentally based upon how many combinations can be removed from the search tree. To test the
-performance locally use the `--bencmark` parameter which will output how long it takes to solve the
-given puzzle(s).
+============================================================
+Cómo funciona
+==============================
 
-## How it works
+El código funciona básicamente llenando el tablero con valores, probando la combinación, y si no es
+válida, intenta otra combinación. Obviamente, esa es una explicación simplificada, pero fundamentalmente el
+código llena el tablero un campo a la vez, hasta que está completamente lleno, luego valida el tablero
+y si la combinación no fue válida, el último valor agregado se elimina y se elige el siguiente valor, y se repite la validación. Esto continúa hasta que todos los valores posibles han sido probados en la última posición, si aún no es válido, el próximo valor grande se reemplaza con el siguiente valor posible,
+y el proceso se repite.
 
-The code works by basically filling the board with values, test the combination, and if it is not
-valid try another combination. Obviously that is a simplified explanation, but fundamentally the
-code fills the board one field at a time, until it is completely full, then it validates the board
-and if the combination was not valid, the last added value will be removed and the next value is
-chosen, and the validation is repeated. This continues until all possible values have been tested at
-the last position, if it is still not valid, the next large value is replaced with the next possible
-value, and the process repeats.
+Sin embargo, simplemente probar todas las combinaciones no es un enfoque viable, hay demasiadas posibles
+combinaciones, 6,670,903,752,021,072,936,960 para ser exactos. Por lo tanto, es necesario limitar la cantidad
+de combinaciones probadas. Primero eliminando combinaciones inválidas, es decir, duplicados y valores en
+jaulas que exceden el total. Para cada celda se calcula un mínimo y un máximo. Este es el valor más bajo posible y el valor más alto posible que la celda puede tener.
 
-Simply testing all combinations is not a viable approach however, there is too many possible
-combinations 6,670,903,752,021,072,936,960 to be exact. Therefor it is necessary to limit the amount
-of combinations tested. First by removing invalid combinations, that is duplicates, and values in
-cages exceeding the total. For each cell a minimum and a maximum is calculated. This is the possible
-lowest value and the possible highest value that the value of the cell can have.
+Considera una jaula con el valor de 17, compuesta por dos celdas, el valor mínimo es 8, ya que ningún
+otro número menor que ese puede sumar 17. El valor máximo es 9. Entonces, las celdas tendrán cada una 8
+o 9. No tiene sentido probar otros números en esa jaula, así que no hay razón para probar otras combinaciones.
+Si 8 o 9 no están disponibles y ya están tomados, entonces ya sabemos que la combinación no es válida,
+y no hay razón para continuar con la búsqueda.
 
-Consider a cage with the value of 17, consisting of two cells, the minimum value is 8 since, no
-other number lower than that can add up to 17. The maximum value is 9. So the cells will each have 8
-or 9. No other numbers makes sense in that cage, so there is no reason to test other combinations.
-If 8 or 9 is not available, and already taken, then we already know that the combination is invalid,
-and there is no reason to continue to the search.
+Otra limitación simple son las jaulas de tamaño 2, que tienen un número par. Aquí el valor que es la mitad
+de este número no se puede usar. Por ejemplo, una jaula con el valor 10 y tamaño de 2, no puede usar el
+valor 5, ya que eso requeriría que ambos campos tengan el mismo valor, y eso no es legal. Así que aquí
+podemos eliminar otra posible combinación de búsqueda.
 
-Another simple limitation is cages of size 2, that have en even number. Here the value that is half
-this number cannot be used. For instance a cage with the value 10, and size of 2. Can not use the
-value 5, since that would require both fields to have the same value, and that is not legal. So here
-we can remove another possible search combination.
+Cada vez que se rellenan algunos de los valores de una jaula, podemos restar esos valores del total y
+aplicar la optimización de valor mínimo y máximo en las celdas restantes.
 
-Each time some of a cages values are filled out, we can subtract those values from the total and
-apply the minimum and maximum value optimization on the remaining cells.
+============================================================
+Cómo usarlo
+==============================
 
-## How to use it
-
-The code can be called from Python by creating a board struct, and a cages list. The board
-structure is really just a 2 dimensional list of values for each cell. A `0` indicates that the cell
-is empty. For expert level challenges these will all be `0`. The cages list is a list of tuples,
-each tuple represents a cage. The first value of the tuple is the value of the cage, the second
-value is a list of coordinate tuples. The coordinate tuples are the `x` and `y` coordinates of the
-cells in the cage. The coordinates are 0-indexed.
-
-To solve a Sudoku puzzle from Python structure, call the method `solve`, which has the signature:
-`def solve(board: Board, cages: Cages) -> bool:` The solution found will be reflected in the board
-passed as parameter.
-
-The solver can also be called from the command-line. Use the `solve.py` file and provide the file
-names of the puzzles to solve. For instance to solve the `expert-1.json` puzzle use the following
-command:
-
-    $ python solve.py expert-1.json
-
-# License
-
-This code is licensed under the [MIT License](https://opensource.org/licenses/MIT), see the license
-file [`LICENSE`](LICENSE) for details.
+El código se puede llamar desde Python creando una estructura de tablero y una lista de jaulas. La estructura
+del tablero es realmente solo una lista bidimensional de valores para cada celda. Un 0 indica que la celda
+está vacía. Para los desafíos de nivel experto
