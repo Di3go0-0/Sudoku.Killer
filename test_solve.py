@@ -55,8 +55,8 @@ class Test(unittest.TestCase):
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ]
 
-        # Create look-up caches to speed up the process of finding cages and limiting the possible
-        # values of each cell.
+        # Crear cachés de búsqueda para acelerar el proceso de encontrar jaulas 
+        # y limitar los valores posibles de cada celda.
         self.cage_cache = []
         self.minmax_cache = []
         for y in range(9):

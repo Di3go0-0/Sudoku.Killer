@@ -10,46 +10,49 @@ combinations_tried = 0
 
 
 def find_cage_index(cages: Cages, x: int, y: int) -> int:
-    """Find the index of the cage at coordinate (x, y).
+    """Encuentra el índice de la jaula en la coordenada (x, y).
 
-    If the cage at coordinate (x, y) does not exist in the list of cages, an AssertionError is
-    raised.
+    Si la jaula en la coordenada (x, y) no existe en la lista de jaulas, se generará una AssertionError.
 
-    :param cages: The list of cages to look up
-    :param x: The zero indexed x coordinate
-    :param y: The zero indexed y coordinate
-    :return: Returns the cage index for the cage at x, y
+    :param jaulas: La lista de jaulas para consultar
+    :param x: La coordenada x con índice cero
+    :param y: La coordenada y con índice cero
+    :return: Devuelve el índice de la jaula para la jaula en x, y
     """
+
     index = 0
     for total, fields in cages:
         if (x, y) in fields:
             return index
         index += 1
 
-    raise AssertionError(f"Cage for coordinates ({x}, {y}) not found")
+    raise AssertionError(f"No se encontró la jaula para las coordenadas ({x}, {y})")
+
 
 
 def is_same_cage(cages: Cages, x1: int, y1: int, x2: int, y2: int) -> bool:
-    """Returns true if two coordinates belong to the same cage.
+    """Devuelve verdadero si dos coordenadas pertenecen a la misma jaula.
 
-    If either set of coordinates are not found as a cage, an AssertionError is raised.
+    Si cualquiera de los conjuntos de coordenadas no se encuentra como una jaula, se generará una AssertionError.
 
-    :param cages: The list of cages to look up
-    :param x1: The zero indexed x coordinate of the first cage
-    :param y1: The zero indexed y coordinate of the first cage
-    :param x2: The zero indexed x coordinate of the second cage
-    :param y2: The zero indexed y coordinate of the second cage
-    :return: Returns true if the cages are the same
+    :param jaulas: La lista de jaulas para consultar
+    :param x1: La coordenada x con índice cero de la primera jaula
+    :param y1: La coordenada y con índice cero de la primera jaula
+    :param x2: La coordenada x con índice cero de la segunda jaula
+    :param y2: La coordenada y con índice cero de la segunda jaula
+    :return: Devuelve verdadero si las jaulas son las mismas
     """
+
     return find_cage_index(cages, x1, y1) == find_cage_index(cages, x2, y2)
 
 
 def print_board(board: Board, cages: Cages) -> None:
-    """Print the board with cages to the console.
+    """Imprime el tablero con las jaulas en la consola.
 
-    :param board: The board to print
-    :param cages: The list of cages to display on the board
+    :param board: El tablero que se va a imprimir
+    :param jaulas: La lista de jaulas para mostrar en el tablero
     """
+
     print("+" + "---+" * 9)
     for y in range(9):
         print("|", end="")
@@ -70,24 +73,25 @@ def print_board(board: Board, cages: Cages) -> None:
 
 def find_taken_value(board: Board, cages: Cages, cage_cache: Board,
                      x: int, y: int) -> list[int]:
-    """Find values taken, that will not be available at the cell at coordinate (x, y).
+    """Encuentra valores ocupados, que no estarán disponibles en la celda de la coordenada (x, y).
 
-    :param board: The board to search for taken values
-    :param cages: The cages to search for taken values but only the one including the coordinate
-    :param cage_cache: The lookup cache converting a coordinate to a cage
-    :param x: The zero indexed x coordinate of the position to examine
-    :param y: The zero indexed y coordinate of the position to examine
-    :return: Returns a list of values that is already taken
+    :param board: El tablero donde buscar los valores ocupados
+    :param cages: Las jaulas donde buscar los valores ocupados, pero solo la que incluye la coordenada
+    :param cage_cache: La caché de búsqueda que convierte una coordenada en una jaula
+    :param x: La coordenada x con índice cero de la posición a examinar
+    :param y: La coordenada y con índice cero de la posición a examinar
+    :return: Devuelve una lista de valores que ya están ocupados
     """
+
     taken_values = []
 
-    # Values taken in the nonet
+    # Valores ocupados en el nodo
     for ty in find_nonet_range(y):
         for tx in find_nonet_range(x):
             if board[ty][tx] > 0:
                 taken_values.append(board[ty][tx])
 
-    # Values taken in cage
+    # Valores ocupados en la jaula
     total, fields = cages[cage_cache[y][x]]
     field_count = len(fields)
     for fx, fy in fields:
@@ -96,9 +100,10 @@ def find_taken_value(board: Board, cages: Cages, cage_cache: Board,
             total -= val
             field_count -= 1
             taken_values.append(val)
-    # Calculate values that are too large to now fit in the cage, since we have subtracted the
-    # already taken values from the total, and reduced the field count this might reduce the number
-    # of possible values considerably
+    # Calcular valores que son demasiado grandes para encajar ahora en la jaula, ya que hemos restado los
+    # valores ya ocupados del total y reducido el conteo de campos, esto podría reducir considerablemente el número
+    # de valores posibles.
+
     max_value = min(total - sum([i for i in range(1, 10)][:field_count - 1]), 9)
     if max_value < 9:
         taken_values.extend(range(max_value + 1, 10))
@@ -106,7 +111,7 @@ def find_taken_value(board: Board, cages: Cages, cage_cache: Board,
     if min_value > 1:
         taken_values.extend(range(1, min(min_value, 10)))
 
-    # Find taken values in the column and row that the position is in
+    # Encontrar valores ocupados en la columna y la fila en los que se encuentra la posición
     for pos in range(9):
         if board[y][pos] > 0:
             taken_values.append(board[y][pos])
@@ -117,21 +122,22 @@ def find_taken_value(board: Board, cages: Cages, cage_cache: Board,
 
 
 def find_minmax_value(cages: Cages, x: int, y: int) -> tuple[int, int]:
-    """ Find minimum and maximum possible values for a cell on the board
+    """ Encuentra los valores mínimo y máximo posibles para una celda en el tablero
 
-    Since cages is a subset of fields that rarely contain all 9 numbers, it is possible to
-    calculate the minimum and maximum possible values of each field in a cage. The naive approach
-    used here will consider the entire cage the same. This will help reduce the number of possible
-    combinations enough that even the expert boards are solvable in due time.
+    Dado que las jaulas son un subconjunto de campos que rara vez contienen los 9 números, es posible
+    calcular los valores mínimo y máximo posibles de cada campo en una jaula. El enfoque simple
+    utilizado aquí considerará toda la jaula de la misma manera. Esto ayudará a reducir la cantidad de posibles
+    combinaciones lo suficiente como para que incluso los tableros expertos sean solucionables en un tiempo adecuado.
 
-    This method is only run once, and since it is only run once, and the min/max cache is calculated
-    at the same time as the cage cache, we will look up the cage index for each cell.
+    Este método solo se ejecuta una vez, y como solo se ejecuta una vez, y la caché de mín/máx se calcula
+    al mismo tiempo que la caché de la jaula, buscaremos el índice de la jaula para cada celda.
 
-    :param cages: The cages to evaluate
-    :param x: The zero based index of the x coordinate
-    :param y: The zero based index of the y coordinate
-    :return: Returns a tuple of the minimum and maximum possible values
+    :param cages: Las jaulas a evaluar
+    :param x: El índice basado en cero de la coordenada x
+    :param y: El índice basado en cero de la coordenada y
+    :return: Devuelve una tupla de los valores mínimo y máximo posibles
     """
+
     cage_index = find_cage_index(cages, x, y)
     total, fields = cages[cage_index]
     field_count = len(fields)
@@ -141,14 +147,14 @@ def find_minmax_value(cages: Cages, x: int, y: int) -> tuple[int, int]:
 
 
 def find_nonet_range(coord: int) -> range:
-    """ Find the range of a nonet along a single axis.
+    """ Encuentra el rango de un noneto a lo largo de un solo eje.
 
-    The first 3 fields along an axis are equal to the nonet that resides in the range [0;3[. The
-    next 3 equals the range [3;6[ and the final 3 equals [6:9[. Since this is the same for both axis
-    this method is called for a single axis at a time.
+    Los primeros 3 campos a lo largo de un eje son iguales al noneto que reside en el rango [0;3[. El
+    siguiente grupo de 3 campos es igual al rango [3;6[ y los últimos 3 campos son iguales a [6:9[. Ya que esto es igual para ambos ejes,
+    este método se llama para un solo eje cada vez.
 
-    :param coord: The zero-based coordinate along an axis
-    :return: Returns the range used by the nonet along the specific axis
+    :param coord: La coordenada con base cero a lo largo de un eje
+    :return: Devuelve el rango utilizado por el noneto a lo largo del eje específico
     """
     if coord < 3:
         return range(0, 3)
@@ -158,19 +164,19 @@ def find_nonet_range(coord: int) -> range:
 
 
 def find_next_cell(board: Board, x: int, y: int) -> tuple[int, int]:
-    """ Find next unoccupied cell in the board, or return (-1, -1).
+    """ Encontrar la siguiente celda desocupada en el tablero, o devolver (-1, -1).
 
-    The method will search for the next empty cell on the board, not including the one provided by
-    the `x` and `y` parameters. The search will first try the cell next to the one specified along
-    the x-axis, and continue along this axis as long as there are no free cells. If it reaches the
-    end it will continue from the beginning of the next line on the y-axis.
+    El método buscará la siguiente celda vacía en el tablero, sin incluir la proporcionada por
+    los parámetros `x` y `y`. La búsqueda primero intentará con la celda contigua a la especificada a lo largo
+    del eje x, y continuará a lo largo de este eje mientras no haya celdas libres. Si alcanza el
+    final, continuará desde el comienzo de la siguiente línea en el eje y.
 
-    If no empty cell is found the tuple (-1, -1) will be returned.
+    Si no se encuentra ninguna celda vacía, se devolverá la tupla (-1, -1).
 
-    :param board: The board to search
-    :param x: The zero based starting x coordinate to search from
-    :param y: The zero based starting y coordinate to search from
-    :return: Returns a tuple of the x and y coordinates of the next free cell
+    :param board: El tablero donde buscar
+    :param x: La coordenada de inicio en el eje x basada en cero desde la cual buscar
+    :param y: La coordenada de inicio en el eje y basada en cero desde la cual buscar
+    :return: Devuelve una tupla de las coordenadas x y y de la siguiente celda libre
     """
     col = x
     row = y
@@ -186,14 +192,14 @@ def find_next_cell(board: Board, x: int, y: int) -> tuple[int, int]:
 
 
 def validate_rows(board: Board) -> bool:
-    """ Validates rows on the board, verifying that no duplicates exist on a single row.
+    """ Valida las filas en el tablero, verificando que no existan duplicados en una sola fila.
 
-    Only filled out cells will be validated, meaning a half filled out row can be valid provided it
-    does not contain any duplicates. This method only searches for duplicates, and stops searching
-    as soon as it discovers one.
+    Solo se validarán las celdas completadas, lo que significa que una fila medio completada puede ser válida siempre y cuando
+    no contenga duplicados. Este método solo busca duplicados y detiene la búsqueda
+    tan pronto como descubre uno.
 
-    :param board: The board to validate
-    :return: Returns a boolean True if no rows contain any duplicates
+    :param board: El tablero a validar
+    :return: Devuelve un booleano Verdadero si ninguna fila contiene duplicados
     """
     for col in range(9):
         row_set = set()
@@ -207,14 +213,14 @@ def validate_rows(board: Board) -> bool:
 
 
 def validate_cols(board: Board) -> bool:
-    """ Validates columns on the board, verifying that no duplicates exist on a single column.
+    """ Valida las columnas en el tablero, verificando que no existan duplicados en una sola columna.
 
-    Only filled out cells will be validated, meaning a half filled out column can be valid provided
-    it does not contain any duplicates. This method only searches for duplicates, and stops
-    searching as soon as it discovers one.
+    Solo se validarán las celdas completadas, lo que significa que una columna medio completada puede ser válida siempre y cuando
+    no contenga duplicados. Este método solo busca duplicados y detiene la búsqueda
+    tan pronto como descubre uno.
 
-    :param board: The board to validate
-    :return: Returns a boolean True if no columns contain any duplicates
+    :param board: El tablero a validar
+    :return: Devuelve un booleano Verdadero si ninguna columna contiene duplicados
     """
     for row in range(9):
         col_set = set()
@@ -227,14 +233,14 @@ def validate_cols(board: Board) -> bool:
 
 
 def validate_nonets(board: Board) -> bool:
-    """ Validates nonets on the board, verifying that no duplicates exist on a nonet.
+    """ Valida los nonetes en el tablero, verificando que no existan duplicados en un nonet.
 
-    Only filled out cells will be validated, meaning a half filled out nonet can be valid provided
-    it does not contain any duplicates. This method only searches for duplicates, and stops
-    searching as soon as it discovers one.
+    Solo se validarán las celdas completadas, lo que significa que un nonet medio completado puede ser válido siempre y cuando
+    no contenga duplicados. Este método solo busca duplicados y detiene la búsqueda
+    tan pronto como descubre uno.
 
-    :param board: The board to validate
-    :return: Returns a boolean True if no duplicates exist in any nonet
+    :param board: El tablero a validar
+    :return: Devuelve un booleano Verdadero si no existen duplicados en ningún nonet
     """
     for nonet_x in range(0, 9, 3):
         range_x = find_nonet_range(nonet_x)
@@ -251,25 +257,25 @@ def validate_nonets(board: Board) -> bool:
 
 
 def validate_cages(board: Board, cages: Cages) -> bool:
-    """ Validates all cages, verifying that no duplicates exist in these, and that the sum equals
-    cage desired total.
+    """ Valida todas las jaulas, verificando que no existan duplicados en estas, y que la suma sea igual
+    al total deseado de la jaula.
 
-    The method iterates through all cages, to test for both duplicates but also the total sum
-    within the cage. Only filled out values are examined, so a cage can be valid if it does not
-    contain duplicates and are not filled out entirely. If all fields are filled out the total sum
-    of the cage is examined and if it does not equal the desired sum of the cage, the method
-    will return a boolean False.
+    El método itera a través de todas las jaulas, para probar tanto los duplicados como también la suma total
+    dentro de la jaula. Solo se examinan los valores completados, por lo que una jaula puede ser válida si no
+    contiene duplicados y no está completamente llena. Si todos los campos están llenos, se examina la suma total
+    de la jaula y si no es igual a la suma deseada de la jaula, el método
+    devolverá un booleano Falso.
 
-    This check could be imposed for unfinished cages as well, where a sum that is higher than, or
-    too high to be achieved with the available unclaimed values, would result in a fail. Since this
-    method is only really used for leaf nodes, that have all fields filled out, it would not make
-    sense to make it more expensive by checking this as well. In other words it would hurt
-    performance, and therefor is not done.
+    Esta comprobación también podría imponerse para jaulas no terminadas, donde una suma que es más alta, o
+    demasiado alta para ser alcanzada con los valores disponibles no reclamados, resultaría en un fallo. Dado que este
+    método solo se usa realmente para nodos hoja, que tienen todos los campos llenos, no tendría sentido
+    hacerlo más costoso al comprobar esto también. En otras palabras, perjudicaría
+    el rendimiento, y por lo tanto no se realiza.
 
-    :param board: The board to extract values from
-    :param cages: The cages to validate
-    :return: Returns a boolean True if no duplicates are found in a cage, and the total equals the
-             valid cage total
+    :param board: El tablero del que extraer valores
+    :param cages: Las jaulas a validar
+    :return: Devuelve un booleano Verdadero si no se encuentran duplicados en una jaula, y el total es igual al
+             total válido de la jaula
     """
     for total, fields in cages:
         cage_set = set()
@@ -286,16 +292,16 @@ def validate_cages(board: Board, cages: Cages) -> bool:
 
 
 def validate(board: Board, cages: Cages) -> bool:
-    """ Validate the columns, rows, nonets and cages on the board.
+    """ Valida las columnas, filas, nonetes y jaulas en el tablero.
 
-    Validates the columns, rows, nonets and fields in that order. If any of these are not valid the
-    function will break out immediately to save processing power. The validation can validate an
-    unfinished board, as long as it does not contain any duplicates it will be marked as valid. So
-    for a board to be completely valid and finished it must be valid with no empty cells left.
+    Valida las columnas, filas, nonetes y campos en ese orden. Si alguna de estas no es válida, la
+    función se interrumpirá inmediatamente para ahorrar potencia de procesamiento. La validación puede validar un
+    tablero sin terminar, siempre y cuando no contenga duplicados, será marcado como válido. Por lo tanto,
+    para que un tablero sea completamente válido y esté terminado, debe ser válido sin celdas vacías restantes.
 
-    :param board: The board to validate
-    :param cages: The cages to validate
-    :return: Returns a boolean True if the board is valid
+    :param board: El tablero a validar
+    :param cages: Las jaulas a validar
+    :return: Devuelve un booleano Verdadero si el tablero es válido
     """
     global validations_performed
     validations_performed += 1
@@ -306,23 +312,23 @@ def validate(board: Board, cages: Cages) -> bool:
 
 def fill_out_next(board: Board, cages: Cages, cage_cache: Board,
                   minmax_cache: MinMaxCache, x: int, y: int) -> bool:
-    """ Fill out the next value on the board, and if all values are filled out validate the board.
+    """ Rellenar el siguiente valor en el tablero, y si todos los valores están completos, validar el tablero.
 
-    If the field at (x, y) is already filled out the method will raise an AssertionError.
+    Si el campo en (x, y) ya está lleno, el método generará un AssertionError.
 
-    This method works by basically taking one value that is not already conflicting with an existing
-    value in the row, column, nonet or cage of the coordinate. Apply the value and call itself
-    recursively for the next cell, until all cells are filled out, at which point it back-tracks
-    and tries the next value available.
+    Este método funciona básicamente tomando un valor que aún no está en conflicto con un valor existente
+    en la fila, columna, nonet o jaula de la coordenada. Aplica el valor y se llama a sí mismo
+    recursivamente para la siguiente celda, hasta que todas las celdas estén llenas, en ese momento retrocede
+    e intenta el siguiente valor disponible.
 
-    :param board: The board to fill out
-    :param cages: The cages to respect
-    :param cage_cache: The look-up cage cache
-    :param minmax_cache: The min/max value limits to use for limiting search size
-    :param x: The zero based x coordinate to fill out
-    :param y: The zero based y coordinate to fill out
-    :return: Returns a boolean True if this board is valid, and False if it could never be in its
-             current form
+    :param board: El tablero para rellenar
+    :param cages: Las jaulas a respetar
+    :param cage_cache: La caché de búsqueda de jaulas
+    :param minmax_cache: Los límites de valor mínimo/máximo a usar para limitar el tamaño de la búsqueda
+    :param x: La coordenada x basada en cero para rellenar
+    :param y: La coordenada y basada en cero para rellenar
+    :return: Devuelve un booleano Verdadero si este tablero es válido, y Falso si nunca podría serlo en su
+             forma actual
     """
     if board[y][x] != 0:
         raise AssertionError(f"Field ({x}, {y}) is not empty")
@@ -333,10 +339,10 @@ def fill_out_next(board: Board, cages: Cages, cage_cache: Board,
     next_x, next_y = find_next_cell(board, x, y)
     taken_values = find_taken_value(board, cages, cage_cache, x, y)
 
-    # If more than one value remains go through all values in the range min to max, and skip the
-    # ones that are already taken, reserved (needed elsewhere), or out of reach (too high or low for
-    # the cage). If only one value remains, then the taken values list will include all the values
-    # that it cannot be, and only one iteration will be completed
+    # Si queda más de un valor, recorre todos los valores en el rango de mínimo a máximo, y omite los
+    # que ya están tomados, reservados (necesarios en otro lugar), o fuera de alcance (demasiado altos o bajos para
+    # la jaula). Si solo queda un valor, entonces la lista de valores tomados incluirá todos los valores
+    # que no puede ser, y solo se completará una iteración
     min_value, max_value = minmax_cache[y][x]
     for value in range(min_value, max_value + 1):
         if value not in taken_values:
@@ -353,19 +359,19 @@ def fill_out_next(board: Board, cages: Cages, cage_cache: Board,
 
 
 def solve(board: Board, cages: Cages) -> bool:
-    """ Solve Sudoku from board and cages
+    """ Resolver Sudoku a partir del tablero y las jaulas
 
-    The method will return a boolean true if the board was solved, or false if it for some reason
-    was not possible to solve it. The board parameter will be updated to reflect the solution, when
-    the function exits.
+    El método devolverá un booleano verdadero si el tablero fue resuelto, o falso si por alguna razón
+    no fue posible resolverlo. El parámetro del tablero se actualizará para reflejar la solución, cuando
+    la función termine.
 
-    :param board: The initial board to use
-    :param cages: The cages of that board
-    :return: Returns a boolean true if the Sudoku could be resolved
+    :param board: El tablero inicial a utilizar
+    :param cages: Las jaulas de ese tablero
+    :return: Devuelve un booleano verdadero si el Sudoku pudo ser resuelto
     """
 
-    # Create look-up caches to speed up the process of finding cages and limiting the possible
-    # values of each cell.
+    # Crear cachés de búsqueda para acelerar el proceso de encontrar jaulas y limitar los posibles
+    # valores de cada celda.
     cage_cache = []
     minmax_cache = []
     for y in range(9):
@@ -377,15 +383,16 @@ def solve(board: Board, cages: Cages) -> bool:
         cage_cache.append(cage_row)
         minmax_cache.append(minmax_row)
 
-    # Fill out single cages, we start by doing this, since these are easy to isolate, and will
-    # give us a smaller search range
+    # Rellenar jaulas individuales, comenzamos haciendo esto, ya que son fáciles de aislar y lo harán
+    # nos darán un rango de búsqueda más pequeño.
+
     for total, fields in cages:
         if len(fields) == 1:
             x, y = fields[0]
             board[y][x] = total
 
-    # The fill out next method expects the field to be empty, so ensure that the field we start with
-    # are actually empty.
+    # El siguiente método de rellenar espera que el campo esté vacío, así que asegúrate de que el campo 
+    # con el que empezamos esté realmente vacío.
     next_x, next_y = 0, 0
     if board[next_x][next_y] != 0:
         next_x, next_y = find_next_cell(board, next_x, next_y)
@@ -394,15 +401,15 @@ def solve(board: Board, cages: Cages) -> bool:
 
 
 def load_from_file(filename: str) -> tuple[Board, Cages]:
-    """ Loads board and cage data from a JSON file.
+    """ Carga los datos del tablero y las jaulas desde un archivo JSON.
 
-    :param filename: The name of the file to load the board and cage data from
-    :return: Returns a tuple of board and cages from the file
+    :param filename: El nombre del archivo del cual cargar los datos del tablero y las jaulas
+    :return: Devuelve una tupla con el tablero y las jaulas obtenidas del archivo
     """
     with open(filename) as board_file:
         data = json.load(board_file)
 
-        # Convert cages from basic JSON to useful tuples
+        # Convertir jaulas de JSON básico a tuplas útiles
         cages = []
         for total, fields in data["cages"]:
             tuples = []
@@ -414,35 +421,34 @@ def load_from_file(filename: str) -> tuple[Board, Cages]:
 
 def run_solver(filenames: list[str], show_stats: bool = False, benchmark: bool = False,
                show_initial_board: bool = False) -> None:
-    """Run the board solver for a list files.
-
-    :param filenames: The list of file names to load and solve
-    :param show_stats: Whether to show stats such as number of validations and unique combinations
-    :param benchmark: Will output the time it takes for one iteration
-    :param show_initial_board: Whetherh to show the board layout before solving it
+    """Ejecuta el solucionador para una lista de archivos.
+    :param filenames: La lista de nombres de archivos para cargar y resolver
+    :param show_stats: Si se muestran estadísticas como el número de validaciones y combinaciones únicas
+    :param benchmark: Mostrará el tiempo que toma para una iteración
+    :param show_initial_board: Si se muestra el diseño del tablero antes de resolverlo
     """
     for filename in filenames:
         global validations_performed, combinations_tried
         validations_performed, combinations_tried = 0, 0
         board, cages = load_from_file(filename=filename)
-        print(f"Using board and cages from {filename}")
+        print(f"Usando tablero y jaulas de {filename}")
         if show_initial_board:
             print_board(board, cages)
 
         if benchmark:
-            print("Benchmarking...")
+            print("Haciendo benchmark...")
             benchmark_result = timeit.timeit(lambda b=board, c=cages: solve(b, c), number=1)
             print_board(board, cages)
-            print(f"Benchmarked solving {filename}: took: {benchmark_result} seconds")
+            print(f"Benchmark completado para {filename}: duración: {benchmark_result} segundos")
         else:
-            print("Calculating...")
+            print("Calculando...")
             success = solve(board, cages)
             if success:
-                print("SUCCESS")
+                print("ÉXITO")
             else:
-                print("Unable to find solution")
+                print("No se pudo encontrar solución")
             print_board(board, cages)
 
         if show_stats:
-            print(f"Validations performed: {validations_performed}")
-            print(f"Unique combinations tested: {combinations_tried}")
+            print(f"Validaciones realizadas: {validations_performed}")
+            print(f"Combinaciones únicas probadas: {combinations_tried}")

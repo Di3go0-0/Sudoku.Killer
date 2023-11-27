@@ -1,41 +1,34 @@
 #!/usr/bin/env python3
-
 import argparse
 
 import solver
 
 
 def show_about():
-    print("""Killer Sudoku Solver
-
-Script to solve Killer Sudoku puzzles, where the classic Sudoku puzzles are extended with cages. 
-that can span multiple nonets.
-
-Developed by: Tommy Andersen <andersentommy@gmail.com>
-
-License: MIT License
-""")
+    print("""Resolutor de Sudoku Asesino.
+          Script para resolver rompecabezas de Sudoku Asesino, donde los clásicos rompecabezas de Sudoku se amplían con jaulas
+          que pueden abarcar múltiples nonetes. Las jaulas tienen un número y un operador matemático, y el número es el resultado""")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Solve a Killer Sudoku from file")
+    parser = argparse.ArgumentParser(description="Resuelve un Killer Sudoku desde un archivo JSON")
     parser.add_argument("--stats",
                         action="store_true",
-                        help=("If set the solver will output information on how many combinations "
-                              "were attempted"))
+                        help=("Si se configura, el solucionador generará información sobre cuántas combinaciones "
+                              "fueron intentados antes de encontrar la solución."))
     parser.add_argument("--show-initial-board",
                         action="store_true",
-                        help="Show the board and regions before trying to solve it.")
+                        help="Muestra el tablero y las regiones antes de intentar resolverlo.")
     parser.add_argument("--benchmark",
                         action="store_true",
-                        help=("Benchmark against the specified files, by attempting to solve the "
-                              "puzzles and show the time taken to do so"))
+                        help=("Haga una comparación con los archivos especificados,"
+                              "intentando resolver los acertijos y mostrando el tiempo necesario para hacerlo."))
     parser.add_argument("--about",
                         action="store_true",
-                        help="Show text describing this script, and exits")
+                        help="Muestra texto que describe este script y sale")
     parser.add_argument("filename",
                         nargs='+',
-                        help="The name of the JSON-file to load board and regions from")
+                        help="El nombre del archivo JSON para cargar el tablero y las regiones de jaula. ")
     parsed_args = parser.parse_args()
 
     if parsed_args.about:
